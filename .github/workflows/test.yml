@@ -31,7 +31,7 @@ jobs:
       - name: Download Dependencies 
         if: steps.cache-llvm-ubuntu.outputs.cache-hit != 'true'
         run: |
-          sudo apt install -y curl libarchive-tools
+          sudo apt install -y curl libarchive-tools libstdc++-12-dev
           echo "release_version=$VERSION" >> $GITHUB_ENV
           curl -LO https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
