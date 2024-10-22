@@ -1,0 +1,56 @@
+name: Nightly Release
+
+on:
+  schedule:
+    - cron: '0 2 * * 0'
+  # Enable manual runs for testing or manually (re-)creating a nightly release.
+  workflow_dispatch:
+
+permissions:
+  contents: write # For creating and uploading to releases.
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          repository: carbon-language/carbon-lang
+
+      - name: Free up disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
+        with:
+          android: true
+          dotnet: true
+          haskell: true
+          # Enabling large-packages adds ~3 minutes to save ~4GB, so turn it off
+          # to save time.
+          large-packages: false
+
+       - name: Download Dependencies 
+         if: steps.cache-llvm-ubuntu.outputs.cache-hit != 'true'
+         run: |
+          apt install -y curl libarchive-tools
+          echo "release_version=$VERSION" >> $GITHUB_ENV
+          curl -LO https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          ./llvm.sh 20
+          curl -L https://releases.bazel.build/8.0.0/rolling/8.0.0-pre.20240925.4/bazel-8.0.0-pre.20240925.4-linux-x86_64 -o /usr/bin/bazel
+          chmod +x /usr/bin/bazel
+
+      - name: Build
+        run: |
+          bazel build -c dbg //language_server //explorer //toolchain
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bsdtar --zstd --options "zstd:threads=0,zstd:compression-level=19" -cvf "release-${{ env.release_version }}.tar.zst" . -C bazel-bin
+          gh release create \
+            --title "Nightly build ${{ env.nightly_date }}" \
+            --generate-notes \
+            --prerelease \
+            v${{ env.release_version }} \
+            "release-${{ env.release_version }}.tar.zst"
