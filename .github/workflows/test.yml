@@ -5,6 +5,7 @@ on:
     - cron: '0 2 * * 0'
   # Enable manual runs for testing or manually (re-)creating a nightly release.
   workflow_dispatch:
+  push:
 
 permissions:
   contents: write # For creating and uploading to releases.
@@ -42,7 +43,7 @@ jobs:
       - name: Build
         run: |
           export PATH=/usr/lib/llvm-20/bin:$PATH
-          bazel build --cxxopt="-stdlib=libc++" --linkopt="-stdlib=libc=+ -lc++ -lc++abi" -c dbg //language_server //explorer //toolchain
+          bazel build --cxxopt="-stdlib=libc++" --linkopt="-stdlib=libc++ -lc++ -lc++abi" -c dbg //language_server //explorer //toolchain
 
       - name: Create the release
         env:
