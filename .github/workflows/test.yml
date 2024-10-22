@@ -31,18 +31,18 @@ jobs:
       - name: Download Dependencies 
         if: steps.cache-llvm-ubuntu.outputs.cache-hit != 'true'
         run: |
-          sudo apt install -y curl libarchive-tools libstdc++-12-dev
+          sudo apt install -y curl libarchive-tools
           echo "release_version=$VERSION" >> $GITHUB_ENV
           curl -LO https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 20
+          sudo ./llvm.sh 20 all
           sudo curl -L https://releases.bazel.build/8.0.0/rolling/8.0.0-pre.20240925.4/bazel-8.0.0-pre.20240925.4-linux-x86_64 -o /usr/bin/bazel
           sudo chmod +x /usr/bin/bazel
 
       - name: Build
         run: |
           export PATH=/usr/lib/llvm-20/bin:$PATH
-          bazel build -c dbg //language_server //explorer //toolchain
+          bazel build --cxxopt="-stdlib=libc++" --linkopt="-stdlib=libc=+ -lc++ -lc++abi" -c dbg //language_server //explorer //toolchain
 
       - name: Create the release
         env:
